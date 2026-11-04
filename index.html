@@ -27,11 +27,17 @@
   button:focus-visible { outline: 2px solid #ff00ff; outline-offset: 2px; }
   ::selection { background: #00ff41; color: #000; }
 
-  /* Touch controls: arrow keys in a keyboard's inverted T, docked to the bottom edge */
-  #pad { display: none; position: fixed; left: 0; right: 0; bottom: 0; grid-template-areas: ". u ." "l d r"; grid-template-columns: repeat(3, 76px); gap: 6px; justify-content: center; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: #000; border-top: 1px solid #333; }
-  #pad button { height: 60px; padding: 0; display: grid; place-items: center; border-radius: 4px; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-  #pad button:active { background: #00ff41; color: #000; }
-  #pad svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.5; pointer-events: none; }
+  #goods { margin-bottom: 14px; }
+
+  /* Touch dock: goods tracker on the left, arrow keys bottom-right in a keyboard's inverted T */
+  #dock { display: none; position: fixed; left: 0; right: 0; bottom: 0; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: #000; border-top: 1px solid #333; }
+  #goods-mini { min-width: 0; font-size: 0.75rem; line-height: 1.5; color: #aaa; }
+  #goods-mini h2 { margin: 0 0 2px; font-size: 0.7rem; letter-spacing: 1px; color: #ff00ff; }
+  #goods-mini div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #pad { display: grid; grid-template-areas: ". u ." "l d r"; grid-template-columns: repeat(3, 52px); grid-auto-rows: 44px; gap: 4px; flex-shrink: 0; }
+  #pad button { padding: 0; display: grid; place-items: center; border-color: #1d7a35; border-radius: 4px; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  #pad button:active { background: #00ff41; border-color: #00ff41; color: #000; }
+  #pad svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; pointer-events: none; }
 
   @media (max-width: 700px) {
     body { padding: 12px; }
@@ -42,11 +48,12 @@
     #desc { margin-top: 12px; }
     #side { order: 1; margin-top: 16px; }
     #legend { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+    #log { height: auto; max-height: 7.5em; }
   }
   @media (pointer: coarse) {
-    #pad { display: grid; }
-    body { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
-    .keys-hint { display: none; }
+    #dock { display: flex; }
+    #goods, .keys-hint { display: none; }
+    body { padding-bottom: calc(124px + env(safe-area-inset-bottom)); }
   }
 </style>
 </head>
@@ -56,19 +63,22 @@
   <div id="top">
     <pre id="map"></pre>
     <div id="side">
-      <h2>STOLEN GOODS</h2><div id="inv"></div>
-      <h2 style="margin-top: 14px">LEGEND</h2><div id="legend"></div>
+      <section id="goods"><h2>STOLEN GOODS</h2><div id="inv"></div></section>
+      <h2>LEGEND</h2><div id="legend"></div>
     </div>
   </div>
   <div id="desc"></div>
   <div id="help"><span class="keys-hint">Move: arrows / WASD / hjkl. </span>Walk into things to search them. Leave by the front door &gt;</div>
   <div id="log" aria-live="polite"></div>
+  <div id="dock">
+  <section id="goods-mini"><h2>STOLEN GOODS</h2><div id="inv-mini"></div></section>
   <nav id="pad" aria-label="Movement">
     <button data-d="0,-1" aria-label="Up" style="grid-area: u"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
     <button data-d="-1,0" aria-label="Left" style="grid-area: l"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4M11 5l-7 7 7 7"/></svg></button>
     <button data-d="0,1" aria-label="Down" style="grid-area: d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
     <button data-d="1,0" aria-label="Right" style="grid-area: r"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></button>
   </nav>
+  </div>
 </div>
 
 <div id="win">
@@ -134,7 +144,7 @@ function draw() {
     if (t) return `<span class="${t.item && items[t.item].got ? 'done' : 't'}">${ch}</span>`;
     return ch === '.' ? '<span class="f">.</span>' : ch === '+' ? '<span class="door">+</span>' : ch;
   }).join('')).join('\n');
-  $('inv').innerHTML = Object.values(items).map(i => `<div class="${i.got ? 'got' : ''}">${i.got ? '✓' : '?'} ${i.label}</div>`).join('');
+  $('inv').innerHTML = $('inv-mini').innerHTML = Object.values(items).map(i => `<div class="${i.got ? 'got' : ''}">${i.got ? '✓' : '?'} ${i.label}</div>`).join('');
 }
 
 function move(dx, dy) {
