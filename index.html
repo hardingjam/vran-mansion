@@ -35,6 +35,13 @@
   ::selection { background: #00ff41; color: #000; }
 
   #goods { margin-bottom: 14px; }
+  summary { display: inline-block; list-style: none; cursor: pointer; padding: 6px 10px; border: 1px solid #ff00ff; color: #ff00ff; font-weight: bold; font-size: 0.9rem; -webkit-user-select: none; user-select: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ' [+]'; }
+  details[open] summary::after { content: ' [-]'; }
+  summary:focus-visible { outline: 2px solid #ff00ff; outline-offset: 2px; }
+  @media (hover: hover) { summary:hover { background: #ff00ff; color: #000; } }
+  #legend { margin-top: 10px; }
 
   /* Touch dock: goods tracker on the left, arrow keys bottom-right in a keyboard's inverted T */
   #dock { display: none; position: fixed; left: 0; right: 0; bottom: 0; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 8px max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); background: #000; border-top: 1px solid #333; }
@@ -71,7 +78,7 @@
     <pre id="map"></pre>
     <div id="side">
       <section id="goods"><h2>STOLEN GOODS</h2><div id="inv"></div></section>
-      <h2>LEGEND</h2><div id="legend"></div>
+      <details><summary>LEGEND</summary><div id="legend"></div></details>
     </div>
   </div>
   <div id="log" aria-live="polite"></div>
