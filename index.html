@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Escape From Vrancouver Mansion</title>
+<style>
+  body { background: #0a0a0a; color: #00ff41; font-family: 'Courier New', monospace; display: flex; justify-content: center; margin: 0; padding: 20px; }
+  #game { max-width: 800px; width: 100%; box-sizing: border-box; border: 4px solid #333; background: #000; padding: 20px; box-shadow: 0 0 30px rgba(0, 255, 65, 0.1); }
+  h1 { margin: 0 0 16px; font-size: 1.5rem; text-align: center; letter-spacing: 2px; }
+  #top { display: flex; gap: 20px; align-items: flex-start; }
+  #map { margin: 0; font-size: min(16px, calc((100vw - 50px) / 27)); /* 45 cols × 0.6em = 27em */ line-height: 1.15; color: #1d7a35; background: #050505; padding: 10px; border: 1px solid #333; }
+  .f { color: #2a2a2a; }
+  .door { color: #c8a000; }
+  .t { color: #ff00ff; font-weight: bold; }
+  .done { color: #555; }
+  .me { color: #fff; font-weight: bold; }
+  #side { flex: 1; border: 1px solid #ff00ff; background: #110011; padding: 10px; font-size: 0.85rem; color: #aaa; }
+  #side h2 { margin: 0 0 6px; color: #ff00ff; font-size: 0.9rem; }
+  #side div { margin-bottom: 4px; }
+  .got { color: #ff00ff; font-weight: bold; }
+  #desc { margin: 16px 0 8px; padding: 12px; border-left: 3px solid #00ff41; background: #050505; min-height: 3em; line-height: 1.4; }
+  #help { color: #8a8a8a; font-size: 0.8rem; margin-bottom: 12px; }
+  #log { height: 110px; overflow-y: auto; border-top: 1px solid #333; padding-top: 8px; font-size: 0.85rem; color: #8a8a8a; scrollbar-color: #333 #000; }
+  #win { position: fixed; inset: 0; padding: 20px; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+  button { background: #111; color: #00ff41; border: 1px solid #00ff41; padding: 10px; font-family: inherit; cursor: pointer; }
+  button:focus-visible { outline: 2px solid #ff00ff; outline-offset: 2px; }
+  ::selection { background: #00ff41; color: #000; }
+
+  /* Touch controls: arrow keys in a keyboard's inverted T, docked to the bottom edge */
+  #pad { display: none; position: fixed; left: 0; right: 0; bottom: 0; grid-template-areas: ". u ." "l d r"; grid-template-columns: repeat(3, 76px); gap: 6px; justify-content: center; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); background: #000; border-top: 1px solid #333; }
+  #pad button { height: 60px; padding: 0; display: grid; place-items: center; border-radius: 4px; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  #pad button:active { background: #00ff41; color: #000; }
+  #pad svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.5; pointer-events: none; }
+
+  @media (max-width: 700px) {
+    body { padding: 12px; }
+    #game { display: flex; flex-direction: column; border: 0; padding: 0; box-shadow: none; }
+    h1 { font-size: 1rem; letter-spacing: 1px; margin-bottom: 12px; }
+    #top { display: contents; }
+    #map { align-self: center; }
+    #desc { margin-top: 12px; }
+    #side { order: 1; margin-top: 16px; }
+    #legend { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+  }
+  @media (pointer: coarse) {
+    #pad { display: grid; }
+    body { padding-bottom: calc(160px + env(safe-area-inset-bottom)); }
+    .keys-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <h1>ESCAPE FROM VRANCOUVER MANSION</h1>
+  <div id="top">
+    <pre id="map"></pre>
+    <div id="side">
+      <h2>STOLEN GOODS</h2><div id="inv"></div>
+      <h2 style="margin-top: 14px">LEGEND</h2><div id="legend"></div>
+    </div>
+  </div>
+  <div id="desc"></div>
+  <div id="help"><span class="keys-hint">Move: arrows / WASD / hjkl. </span>Walk into things to search them. Leave by the front door &gt;</div>
+  <div id="log" aria-live="polite"></div>
+  <nav id="pad" aria-label="Movement">
+    <button data-d="0,-1" aria-label="Up" style="grid-area: u"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg></button>
+    <button data-d="-1,0" aria-label="Left" style="grid-area: l"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12H4M11 5l-7 7 7 7"/></svg></button>
+    <button data-d="0,1" aria-label="Down" style="grid-area: d"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M5 13l7 7 7-7"/></svg></button>
+    <button data-d="1,0" aria-label="Right" style="grid-area: r"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M13 5l7 7-7 7"/></svg></button>
+  </nav>
+</div>
+
+<div id="win">
+  <h1 style="color: #ff00ff">MISSION ACCOMPLISHED</h1>
+  <p>Eine pulls up in a beat-up sedan. You toss the laundry in the back seat.</p>
+  <p>"Good work," Eine says. "Vranak will never notice they're gone."</p>
+  <button onclick="location.reload()">PLAY AGAIN</button>
+</div>
+
+<script>
+const MAP = [
+  '#############################################',
+  '#....S...............C.......#..............#',
+  '#............................+........P.....#',
+  '#################N###+########..........D...#',
+  '#.............#..............#..............#',
+  '#.T...........#..............################',
+  '#.............#..............#...B..........#',
+  '#......G......+..............+..............#',
+  '#.............#..............#.........L....#',
+  '#.............#..............#..............#',
+  '#####################>#######################',
+];
+
+// box = [x0, y0, x1, y1] of the room's floor
+const rooms = [
+  { name: 'Hallway', box: [15, 4, 28, 9], text: 'The main hallway of the mansion. The carpet is damp. A poster of a nun hangs here, riddled with dart holes.' },
+  { name: 'Living Room', box: [1, 4, 13, 9], text: 'Global News plays on a loop on a dusty CRT TV. A Greta Thunberg bodypillow rests on a stained sofa.' },
+  { name: 'Study', box: [30, 6, 43, 9], text: "A cramped study. A massive pile of unopened letters from world leaders sits on the desk next to a copy of 'Spiritual Engineering for Dummies'." },
+  { name: 'Gallery', box: [1, 1, 28, 2], text: "A narrow corridor lined with framed selfies of young women. It feels like a 'Red Scare Discord' museum. There are old rock CDs scattered on the floor." },
+  { name: "Vran's Master Suite", box: [30, 1, 43, 4], text: "The air is thick. A dresser sits by the bed, covered in loose change and postcards from 'Punany'." },
+];
+
+const things = {
+  N: { name: 'Nun poster', say: 'The nun looks disappointed. Or maybe just perforated.' },
+  T: { name: 'CRT TV', say: 'The news anchor is talking about interest rates. It never stops.' },
+  G: { name: 'Greta bodypillow', item: 'paws' },
+  B: { name: 'Book', say: "It says: 'Step 1: Believe you are a genius. Step 2: Stop working.'" },
+  L: { name: 'Pile of letters', item: 'sommers' },
+  S: { name: 'Selfie wall', say: 'You recognize some of the girls from the internet. They look confused to be here.' },
+  C: { name: 'Rock CDs', say: 'A lot of Dire Straits and Pink Floyd.' },
+  P: { name: 'Postcard', say: "'Happy Birthday Vranak!' The handwriting is suspiciously neat." },
+  D: { name: 'Dresser', item: 'spins' },
+  '>': { name: 'Front door' },
+};
+
+const items = {
+  paws: { label: "Paw's Underwear", found: "Found it! Paw's underwear was stuffed inside Greta's head." },
+  sommers: { label: "Sommer's Underwear", found: "Underneath a letter from the Prime Minister, you find Sommer's underwear." },
+  spins: { label: "Spin's Bra", found: "Spin's bra was just sitting right there on the dresser. Easy." },
+};
+
+const me = { x: 21, y: 9 };
+let here, won = false;
+const $ = id => document.getElementById(id);
+const inBox = ([x0, y0, x1, y1], x, y, pad = 0) => x >= x0 - pad && x <= x1 + pad && y >= y0 - pad && y <= y1 + pad;
+
+function draw() {
+  $('map').innerHTML = MAP.map((row, y) => [...row].map((ch, x) => {
+    if (x === me.x && y === me.y) return '<span class="me">@</span>';
+    if (!rooms.some(r => r.seen && inBox(r.box, x, y, 1))) return ' '; // fog of war: only rooms you've entered
+    const t = things[ch];
+    if (t) return `<span class="${t.item && items[t.item].got ? 'done' : 't'}">${ch}</span>`;
+    return ch === '.' ? '<span class="f">.</span>' : ch === '+' ? '<span class="door">+</span>' : ch;
+  }).join('')).join('\n');
+  $('inv').innerHTML = Object.values(items).map(i => `<div class="${i.got ? 'got' : ''}">${i.got ? '✓' : '?'} ${i.label}</div>`).join('');
+}
+
+function move(dx, dy) {
+  const x = me.x + dx, y = me.y + dy, t = things[MAP[y][x]];
+  if (t) bump(t);
+  else if (MAP[y][x] !== '#') {
+    me.x = x; me.y = y;
+    const room = rooms.find(r => inBox(r.box, x, y));
+    if (room && room !== here) enter(room);
+  }
+  draw();
+}
+
+function bump(t) {
+  if (t.say) return msg(t.say);
+  if (t.item) {
+    const it = items[t.item];
+    msg(it.got ? 'Nothing else here but dust and bad vibes.' : it.found);
+    it.got = true;
+    return;
+  }
+  const missing = Object.values(items).filter(i => !i.got).map(i => i.label);
+  if (missing.length) return msg(`Eine (radio): "Not yet. Still missing: ${missing.join(', ')}."`);
+  won = true;
+  $('win').style.display = 'flex';
+  $('win').querySelector('button').focus();
+}
+
+function enter(room) {
+  here = room;
+  room.seen = true;
+  $('desc').textContent = `${room.name.toUpperCase()}: ${room.text}`;
+}
+
+function msg(text) {
+  const d = document.createElement('div');
+  d.textContent = '> ' + text;
+  $('log').prepend(d);
+}
+
+const KEYS = { arrowup: [0, -1], arrowdown: [0, 1], arrowleft: [-1, 0], arrowright: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], k: [0, -1], j: [0, 1], h: [-1, 0], l: [1, 0] };
+addEventListener('keydown', e => {
+  const dir = KEYS[e.key.toLowerCase()];
+  if (!dir || won || e.metaKey || e.ctrlKey) return;
+  e.preventDefault();
+  move(...dir);
+});
+$('pad').addEventListener('click', e => {
+  const d = e.target.closest('[data-d]')?.dataset.d;
+  if (d && !won) move(...d.split(',').map(Number));
+});
+document.addEventListener('touchstart', () => {}, { passive: true }); // lets iOS Safari show :active on the keys
+
+$('legend').innerHTML = Object.entries(things).map(([g, t]) => `<div><span class="t">${g}</span> ${t.name}</div>`).join('');
+enter(rooms[0]);
+msg('Eine (radio): "Can you hear me? Find the items and get out of there."');
+draw();
+</script>
+</body>
+</html>
