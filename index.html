@@ -21,7 +21,14 @@
   .got { color: #ff00ff; font-weight: bold; }
   #desc { margin: 16px 0 8px; padding: 12px; border-left: 3px solid #00ff41; background: #050505; min-height: 3em; line-height: 1.4; }
   #help { color: #8a8a8a; font-size: 0.8rem; margin-bottom: 12px; }
-  #log { height: 110px; overflow-y: auto; border-top: 1px solid #333; padding-top: 8px; font-size: 0.85rem; color: #8a8a8a; scrollbar-color: #333 #000; }
+  #log { height: 110px; margin-top: 16px; overflow-y: auto; border-top: 1px solid #333; padding-top: 8px; font-size: 0.85rem; color: #8a8a8a; scrollbar-color: #333 #000; }
+  #log div { padding: 2px 0; }
+  /* newest message: accent color + a one-off flash, so a repeated message still reads as new */
+  #log div:first-child { color: #ff00ff; font-size: 1rem; font-weight: bold; }
+  @media (prefers-reduced-motion: no-preference) {
+    #log div:first-child { animation: fresh 0.9s cubic-bezier(0.16, 1, 0.3, 1); }
+  }
+  @keyframes fresh { from { background: rgba(255, 0, 255, 0.28); } to { background: transparent; } }
   #win { position: fixed; inset: 0; padding: 20px; background: rgba(0, 0, 0, 0.95); display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
   button { background: #111; color: #00ff41; border: 1px solid #00ff41; padding: 10px; font-family: inherit; cursor: pointer; }
   button:focus-visible { outline: 2px solid #ff00ff; outline-offset: 2px; }
@@ -48,7 +55,7 @@
     #desc { margin-top: 12px; }
     #side { order: 1; margin-top: 16px; }
     #legend { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
-    #log { height: auto; max-height: 7.5em; }
+    #log { height: auto; max-height: 7.5em; margin-top: 12px; }
   }
   @media (pointer: coarse) {
     #dock { display: flex; }
@@ -67,9 +74,9 @@
       <h2>LEGEND</h2><div id="legend"></div>
     </div>
   </div>
+  <div id="log" aria-live="polite"></div>
   <div id="desc"></div>
   <div id="help"><span class="keys-hint">Move: arrows / WASD / hjkl. </span>Walk into things to search them. Leave by the front door &gt;</div>
-  <div id="log" aria-live="polite"></div>
   <div id="dock">
   <section id="goods-mini"><h2>STOLEN GOODS</h2><div id="inv-mini"></div></section>
   <nav id="pad" aria-label="Movement">
